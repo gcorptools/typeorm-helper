@@ -1,9 +1,10 @@
-import { SortDirection } from '@src/enums';
+import { SortDirection } from '../../enums';
 import {
+  NotValidPost,
   Person,
   Post,
   PostTranslation
-} from '@src/models/__mocks__/test.models';
+} from '../../tests/test.models';
 import { IBackup, IMemoryDb, newDb } from 'pg-mem';
 import { DataSource, LessThan, Like, MoreThan } from 'typeorm';
 import { BaseRepository } from '../base.repository';
@@ -12,10 +13,45 @@ let db: IMemoryDb;
 let backup: IBackup;
 let connection: DataSource;
 
+let notValidRepository: BaseRepository<NotValidPost>;
 let personRepository: BaseRepository<Person>;
 let postRepository: BaseRepository<Post>;
 
 describe('Base models', () => {
+  it('should validate input before saving or updating', async () => {
+    const personData = {
+      lastName: 'Any last name',
+      firstName: 'Any first name'
+    };
+    try {
+      await personRepository.save(
+        personRepository.create({
+          ...personData,
+          age: -4 //Invalid age
+        })
+      );
+      fail('Should have failed because of negative age');
+    } catch (e) {
+      expect(e).toBeDefined();
+    }
+
+    const person = await personRepository.save(
+      personRepository.create({
+        ...personData,
+        age: 4 //Valid age
+      })
+    );
+    expect(person).toBeDefined();
+
+    try {
+      person.age = -12;
+      await personRepository.save(person);
+      fail('Should have failed because of negative age');
+    } catch (e) {
+      expect(e).toBeDefined();
+    }
+  });
+
   it('should format fields before saving or updating', async () => {
     const [lastName, firstName, age] = ['doe', 'jane and joe', 10];
     let person = await personRepository.save(
@@ -147,7 +183,7 @@ describe('Base models', () => {
     expect(translatedPost?.description).toEqual(frenchData.description);
   });
 
-  it('should translate with multiple values', async () => {
+  it('should translate with multiple or unsafe values', async () => {
     const author = await personRepository.save(
       personRepository.create({
         lastName: 'Auth',
@@ -187,6 +223,33 @@ describe('Base models', () => {
     expect((await postRepository.save(specialRecord)).title).toEqual(
       'New word'
     );
+
+    const datum = data[0];
+    const unsafeValues = [
+      { ...datum, translations: undefined },
+      { ...datum, translations: null },
+      { ...datum, translations: [] }
+    ];
+    const unsafeRecords = await postRepository.save(
+      postRepository.create(unsafeValues)
+    );
+    expect(unsafeRecords[0].translations.length).toEqual(1);
+    expect(unsafeRecords[1].translations.length).toEqual(1);
+    expect(unsafeRecords[2].translations.length).toEqual(1);
+  });
+
+  it('should not work with invalid translatable class structure', async () => {
+    try {
+      await notValidRepository.save(
+        notValidRepository.create({
+          title: 'Valid title',
+          description: 'Valid description'
+        })
+      );
+    } catch (e) {
+      // @translations() missing in class definition
+      expect(e).toBeDefined();
+    }
   });
 
   beforeAll(async () => {
@@ -204,6 +267,10 @@ describe('Base models', () => {
     });
 
     await connection.synchronize();
+    notValidRepository = new BaseRepository<NotValidPost>(
+      NotValidPost,
+      connection.manager
+    );
     personRepository = new BaseRepository<Person>(Person, connection.manager);
     postRepository = new BaseRepository<Post>(Post, connection.manager);
 

@@ -1,4 +1,4 @@
-import { getTranslatable, isEmpty } from '@src/utils';
+import { getTranslatableFields, getTranslationsField, isEmpty } from '../utils';
 import { AfterLoad, BeforeUpdate, DeepPartial } from 'typeorm';
 import { BaseModel } from './base.model';
 import { BaseTranslationModel } from './base.translation.model';
@@ -6,7 +6,18 @@ import { BaseTranslationModel } from './base.translation.model';
 export abstract class BaseTranslatableModel<
   T extends BaseTranslationModel
 > extends BaseModel {
-  translations!: T[];
+  private _translationsField: string;
+
+  constructor() {
+    super();
+    const translationsField = getTranslationsField(this);
+    if (!translationsField) {
+      throw new Error(
+        `Expected at least one field with decorator @translations on class ${this.constructor.name}`
+      );
+    }
+    this._translationsField = translationsField;
+  }
 
   setDefaultFields(
     plainEntityLikeOrPlainEntityLikes?:
@@ -33,30 +44,10 @@ export abstract class BaseTranslatableModel<
     return super.setDefaultFields(newData);
   }
 
-  private _setTranslationInData(
-    plainEntityLikeOrPlainEntityLikes?: DeepPartial<BaseTranslatableModel<T>>
-  ): DeepPartial<BaseTranslatableModel<T>> {
-    if (!plainEntityLikeOrPlainEntityLikes) {
-      plainEntityLikeOrPlainEntityLikes = {};
-    }
-    if (
-      Object.keys(plainEntityLikeOrPlainEntityLikes).includes('translations')
-    ) {
-      // TODO: Even if empty, we will not care?
-      return plainEntityLikeOrPlainEntityLikes;
-    }
-    Object.assign(this, plainEntityLikeOrPlainEntityLikes);
-    const translation = this._createOrUpdateTranslation();
-    return {
-      ...plainEntityLikeOrPlainEntityLikes,
-      translations: [translation]
-    };
-  }
-
   @AfterLoad()
   translate(): void {
     const translation = this._currentTranslation();
-    if (!translation || !translation.translated()) {
+    if (!translation) {
       return;
     }
     Object.assign(this, this._getTranslationValue(translation));
@@ -67,7 +58,7 @@ export abstract class BaseTranslatableModel<
     let currentTranslation = this._currentTranslation();
     if (!currentTranslation) {
       currentTranslation = this._createOrUpdateTranslation();
-      this.translations.push(currentTranslation);
+      (this as any)[this._translationsField].push(currentTranslation);
     } else {
       currentTranslation = this._createOrUpdateTranslation(currentTranslation);
     }
@@ -80,9 +71,34 @@ export abstract class BaseTranslatableModel<
 
   protected abstract get _translationClass(): new () => T;
 
+  private _setTranslationInData(
+    plainEntityLikeOrPlainEntityLikes?: DeepPartial<BaseTranslatableModel<T>>
+  ): DeepPartial<BaseTranslatableModel<T>> {
+    if (!plainEntityLikeOrPlainEntityLikes) {
+      plainEntityLikeOrPlainEntityLikes = {};
+    }
+    const translationValues = (plainEntityLikeOrPlainEntityLikes as any)[
+      this._translationsField
+    ];
+    if (
+      translationValues &&
+      translationValues !== null &&
+      translationValues.length > 0
+    ) {
+      // If non-empty, we will not care
+      return plainEntityLikeOrPlainEntityLikes;
+    }
+    Object.assign(this, plainEntityLikeOrPlainEntityLikes);
+    const translation = this._createOrUpdateTranslation();
+    return {
+      ...plainEntityLikeOrPlainEntityLikes,
+      [this._translationsField]: [translation]
+    };
+  }
+
   private _currentTranslation(): T | null {
     const language = this._currentLanguage();
-    const translation = this._translations().filter(
+    const translation = ((this as any)[this._translationsField] || []).filter(
       (translation: T) => translation.language === language
     );
     if (!isEmpty(translation)) {
@@ -91,15 +107,11 @@ export abstract class BaseTranslatableModel<
     return null;
   }
 
-  private _translations(): T[] {
-    return this.translations || [];
-  }
-
   private _createOrUpdateTranslation(translation: T | null = null): T {
     // Get current parameters
     const language = this._currentLanguage();
     const currentValues: any = this;
-    const translatableFields = getTranslatable(this) || [];
+    const translatableFields = getTranslatableFields(this);
 
     // Create an object from translatable fields
     const data = translatableFields.reduce(
@@ -119,10 +131,7 @@ export abstract class BaseTranslatableModel<
   }
 
   private _getTranslationValue(translation: T): Record<string, any> {
-    if (!translation.translated()) {
-      return {};
-    }
-    const translatableFields = getTranslatable(this) || [];
+    const translatableFields = getTranslatableFields(this);
     const translationValues: any = translation;
     return translatableFields.reduce(
       (result: Record<string, any>, field: string) => ({

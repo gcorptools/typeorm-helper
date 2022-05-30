@@ -1,4 +1,4 @@
-import { Page } from '@src/types';
+import { Page } from '../types';
 import {
   DeepPartial,
   EntityManager,

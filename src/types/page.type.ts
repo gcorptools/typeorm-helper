@@ -1,4 +1,4 @@
-import { SortDirection } from '@src/enums';
+import { SortDirection } from '../enums';
 
 /**
  * Page response for sending as API response

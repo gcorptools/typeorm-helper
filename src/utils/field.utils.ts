@@ -8,8 +8,8 @@ export interface Helper {
 }
 
 /**
- * Annotates entities date fields with this decorator in order to
- * automatically manage formatting on serialize operations.
+ * Annotates entities column fields with this decorator in order to
+ * automatically manage translation on CRU(D) operations.
  *
  */
 export const translatable =
@@ -22,16 +22,39 @@ export const translatable =
     _defineMetadata(TRANSLATABLE_METADATA_KEY, _constructor, field, helper);
   };
 
+export const translations =
+  () =>
+  (target: unknown | any, field: string): any => {
+    const _constructor = target.constructor;
+    const helper: Helper = {
+      field
+    };
+    _defineMetadata(TRANSLATIONS_METADATA_KEY, _constructor, field, helper);
+  };
+
 /**
- * Get a Record of field as key and DateDeserializerHelper as values.
- * This record contains the metadata (date format) to use when parsing JSON inputs
- * for a given set of fields.
+ * Get a list of fields that can be translated.
  *
  * @param target the class/instance on which we're looking for metadata
  * @returns the metadata information for this whole class inheritance (current and parents)
  */
-export const getTranslatable = (target: unknown | any): string[] => {
+export const getTranslatableFields = (target: unknown | any): string[] => {
   return Object.keys(_getMetadata(TRANSLATABLE_METADATA_KEY, target));
+};
+
+/**
+ * Get the field annotated with @translations in class hierarchy
+ * @param target the class/instance on which we're looking for metadata
+ * @returns null if no fields annotated @translations
+ */
+export const getTranslationsField = (target: unknown | any): string | null => {
+  const translations = Object.keys(
+    _getMetadata(TRANSLATIONS_METADATA_KEY, target)
+  );
+  if (!translations || translations.length === 0) {
+    return null;
+  }
+  return translations.slice(-1)[0];
 };
 
 const _getMetadata = (symbol: Symbol, target: unknown | any): any => {
@@ -54,3 +77,4 @@ const _defineMetadata = (
 };
 
 const TRANSLATABLE_METADATA_KEY = Symbol('translatable');
+const TRANSLATIONS_METADATA_KEY = Symbol('translations');

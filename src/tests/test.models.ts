@@ -1,9 +1,7 @@
-import {
-  BaseModel,
-  BaseTranslatableModel,
-  BaseTranslationModel
-} from '@src/models';
-import { capitalizeFirst, isEmpty, translatable } from '@src/utils';
+import { BaseModel } from '../models/base.model';
+import { BaseTranslatableModel } from '../models/base.translatable.model';
+import { BaseTranslationModel } from '../models/base.translation.model';
+import { capitalizeFirst, translatable, translations } from '../utils';
 import { randomUUID } from 'crypto';
 import {
   Entity,
@@ -71,6 +69,7 @@ export class Post extends BaseTranslatableModel<PostTranslation> {
   @ManyToOne(() => Person, (owner) => owner.posts)
   author!: Person;
 
+  @translations()
   @OneToMany(() => PostTranslation, (translation) => translation.source, {
     eager: true,
     cascade: ['insert', 'update']
@@ -84,10 +83,6 @@ export class Post extends BaseTranslatableModel<PostTranslation> {
 
   protected _currentLanguage(): string {
     return Post.activeLanguage;
-  }
-
-  protected _translationsField(): string {
-    return 'translations';
   }
 
   protected get _translationClass(): new () => PostTranslation {
@@ -108,8 +103,50 @@ export class PostTranslation extends BaseTranslationModel {
 
   @ManyToOne(() => Post, (source) => source.translations)
   source!: Post;
+}
 
-  translated(): boolean {
-    return !isEmpty(this.title) && !isEmpty(this.description);
+/**
+ * Everything is correct except missing translations() decorator
+ */
+@Entity()
+export class NotValidPost extends BaseTranslatableModel<PostTranslation> {
+  @PrimaryGeneratedColumn()
+  id!: number;
+
+  @Column()
+  title!: string;
+
+  @Column()
+  description!: string;
+
+  protected _currentLanguage(): string {
+    return Post.activeLanguage;
   }
+
+  protected get _translationClass(): new () => PostTranslation {
+    return PostTranslation;
+  }
+}
+
+export class NoMetadata {
+  id!: number;
+  code!: string;
+}
+
+export class WithMetadata extends NoMetadata {
+  date!: Date;
+  @translatable()
+  name!: string;
+  @translatable()
+  description!: string;
+  @translations()
+  translations!: Record<string, string>[];
+}
+
+export class WithParentMetadata extends WithMetadata {
+  secret!: string;
+  @translatable()
+  comment!: string;
+  @translations()
+  anotherTranslations!: Record<string, string>[];
 }
