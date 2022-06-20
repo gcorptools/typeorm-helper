@@ -98,7 +98,7 @@ describe('Base models', () => {
         firstName: Like('%0%')
       },
       order: {
-        age: SortDirection.Desc
+        age: SortDirection.desc
       }
     });
     expect(secondFetch.totalElements).toEqual(2); // firstName: 80 and firstName: 90

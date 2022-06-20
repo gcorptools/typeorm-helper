@@ -44,6 +44,9 @@ export abstract class BaseTranslatableModel<
     return super.setDefaultFields(newData);
   }
 
+  /**
+   * Replace current object translatable values with corresponding translations
+   */
   @AfterLoad()
   translate(): void {
     const translation = this._currentTranslation();
@@ -53,6 +56,9 @@ export abstract class BaseTranslatableModel<
     Object.assign(this, this._getTranslationValue(translation));
   }
 
+  /**
+   * Update translations objects accordingly to active language
+   */
   @BeforeUpdate()
   translateOnUpdate(): void {
     let currentTranslation = this._currentTranslation();

@@ -39,6 +39,10 @@ export class BaseRepository<T extends BaseModel> extends Repository<T> {
     return super.create(newData);
   }
 
+  /**
+   * Find records and add it in a page object
+   * @param options the query options
+   */
   async findPage(options?: FindManyOptions<T>): Promise<Page<T>> {
     const safeOptions = this._initOptions(options);
     return this._repository
