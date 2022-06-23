@@ -48,15 +48,11 @@ export class Person extends BaseModel {
   }
 }
 
-@Entity()
-export class Post extends BaseTranslatableModel<PostTranslation> {
+class BasePostTranslation extends BaseTranslatableModel<PostTranslation> {
   static activeLanguage: string;
 
   @PrimaryGeneratedColumn()
   id!: number;
-
-  @Column()
-  code!: string;
 
   @translatable()
   @Column()
@@ -65,6 +61,20 @@ export class Post extends BaseTranslatableModel<PostTranslation> {
   @translatable()
   @Column()
   description!: string;
+
+  protected _currentLanguage(): string {
+    return Post.activeLanguage;
+  }
+
+  protected get _translationClass(): new () => PostTranslation {
+    return PostTranslation;
+  }
+}
+
+@Entity()
+export class Post extends BasePostTranslation {
+  @Column()
+  code!: string;
 
   @ManyToOne(() => Person, (owner) => owner.posts)
   author!: Person;
@@ -79,14 +89,6 @@ export class Post extends BaseTranslatableModel<PostTranslation> {
   format(data: any): void {
     super.format(data);
     this.code = randomUUID().toString();
-  }
-
-  protected _currentLanguage(): string {
-    return Post.activeLanguage;
-  }
-
-  protected get _translationClass(): new () => PostTranslation {
-    return PostTranslation;
   }
 }
 
@@ -109,24 +111,7 @@ export class PostTranslation extends BaseTranslationModel {
  * Everything is correct except missing translations() decorator
  */
 @Entity()
-export class NotValidPost extends BaseTranslatableModel<PostTranslation> {
-  @PrimaryGeneratedColumn()
-  id!: number;
-
-  @Column()
-  title!: string;
-
-  @Column()
-  description!: string;
-
-  protected _currentLanguage(): string {
-    return Post.activeLanguage;
-  }
-
-  protected get _translationClass(): new () => PostTranslation {
-    return PostTranslation;
-  }
-}
+export class NotValidPost extends BasePostTranslation {}
 
 export class NoMetadata {
   id!: number;
