@@ -261,12 +261,13 @@ describe('Base models', () => {
       implementation: () => 'test',
       name: 'current_database'
     });
-    connection = await db.adapters.createTypeormConnection({
+    connection = await db.adapters.createTypeormDataSource({
       type: 'postgres',
-      entities: [Person, Post, PostTranslation]
+      entities: [Person, Post, PostTranslation],
+      synchronize: true
     });
 
-    await connection.synchronize();
+    await connection.initialize();
     notValidRepository = new BaseRepository<NotValidPost>(
       NotValidPost,
       connection.manager
