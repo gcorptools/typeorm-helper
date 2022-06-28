@@ -1,7 +1,12 @@
 import { BaseModel } from '../models/base.model';
 import { BaseTranslatableModel } from '../models/base.translatable.model';
 import { BaseTranslationModel } from '../models/base.translation.model';
-import { capitalizeFirst, translatable, translations } from '../utils';
+import {
+  capitalizeFirst,
+  jsonIgnored,
+  translatable,
+  translations
+} from '../utils';
 import { randomUUID } from 'crypto';
 import {
   Entity,
@@ -11,6 +16,22 @@ import {
   ManyToOne
 } from 'typeorm';
 
+export class NoMetadataPerson {
+  id!: number;
+
+  name!: string;
+
+  firstName!: string;
+
+  lastName!: string;
+
+  confirmed!: boolean;
+
+  age!: number;
+
+  posts!: Post[];
+}
+
 @Entity()
 export class Person extends BaseModel {
   @PrimaryGeneratedColumn()
@@ -19,9 +40,11 @@ export class Person extends BaseModel {
   @Column({ select: true })
   name!: string;
 
+  @jsonIgnored()
   @Column()
   firstName!: string;
 
+  @jsonIgnored()
   @Column()
   lastName!: string;
 
@@ -79,6 +102,7 @@ export class Post extends BasePostTranslation {
   @ManyToOne(() => Person, (owner) => owner.posts)
   author!: Person;
 
+  @jsonIgnored()
   @translations()
   @OneToMany(() => PostTranslation, (translation) => translation.source, {
     eager: true,
@@ -124,11 +148,13 @@ export class WithMetadata extends NoMetadata {
   name!: string;
   @translatable()
   description!: string;
+  @jsonIgnored()
   @translations()
   translations!: Record<string, string>[];
 }
 
 export class WithParentMetadata extends WithMetadata {
+  @jsonIgnored()
   secret!: string;
   @translatable()
   comment!: string;

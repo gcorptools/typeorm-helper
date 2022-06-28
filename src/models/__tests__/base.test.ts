@@ -1,5 +1,6 @@
 import { SortDirection } from '../../enums';
 import {
+  NoMetadataPerson,
   NotValidPost,
   Person,
   Post,
@@ -250,6 +251,55 @@ describe('Base models', () => {
       // @translations() missing in class definition
       expect(e).toBeDefined();
     }
+  });
+
+  it('should serialize to JSON without annotated fields', async () => {
+    // 1- Single models
+    const author = await personRepository.save(
+      personRepository.create({
+        lastName: 'Auth',
+        firstName: 'Ob',
+        age: 10
+      })
+    );
+    expect(author.firstName).toBeDefined();
+    expect(author.lastName).toBeDefined();
+
+    // 1.1- When serialized, no value for ignored field
+    const serializedAuthor = JSON.parse(JSON.stringify(author));
+    expect(serializedAuthor.firstName).toBeUndefined();
+    expect(serializedAuthor.lastName).toBeUndefined();
+
+    // 1.2- Same object (value) with a non annotated class
+    const otherAuthor = Object.assign(new NoMetadataPerson(), author);
+    const serializedOtherAuthor = JSON.parse(JSON.stringify(otherAuthor));
+    expect(serializedOtherAuthor.firstName).toEqual(author.firstName);
+    expect(serializedOtherAuthor.lastName).toEqual(author.lastName);
+
+    // 2- Embedded models
+    const savedPost = await postRepository.save(
+      postRepository.create({
+        title: 'A post',
+        description: 'A description',
+        author
+      })
+    );
+    const post = await postRepository.findOne({
+      where: { id: savedPost.id },
+      relations: {
+        author: true,
+        translations: true
+      }
+    });
+    expect(post!.translations.length).toEqual(1);
+    expect(post!.author.firstName).toEqual(author.firstName);
+    expect(post!.author.lastName).toEqual(author.lastName);
+
+    const serializedPost = JSON.parse(JSON.stringify(post));
+    expect(serializedPost.translations).toBeUndefined();
+    expect(serializedPost.author).not.toBeUndefined();
+    expect(serializedPost.author.firstName).toBeUndefined();
+    expect(serializedPost.author.lastName).toBeUndefined();
   });
 
   beforeAll(async () => {

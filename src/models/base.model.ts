@@ -1,4 +1,5 @@
 import { BeforeInsert, BeforeUpdate, DeepPartial } from 'typeorm';
+import { getJsonIgnoredFields } from '../utils/field.utils';
 
 /**
  * Simple implementation for BaseModel
@@ -38,5 +39,20 @@ export abstract class BaseModel {
   beforeSave(): void {
     this.format(this);
     this.validate(this);
+  }
+
+  /**
+   * Override JS method for object serialization into JSON
+   * @returns the object JSON representation
+   */
+  toJSON(): { [name: string]: any } {
+    const json: any = {};
+    const ignoredFields: string[] = getJsonIgnoredFields(this);
+    Object.keys(this)
+      .filter((field: string) => !ignoredFields.includes(field))
+      .forEach((field: string) => {
+        json[field] = (this as any)[field];
+      });
+    return json;
   }
 }

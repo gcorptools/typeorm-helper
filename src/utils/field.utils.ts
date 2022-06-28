@@ -9,6 +9,21 @@ export interface Helper {
 
 /**
  * Annotates entities column fields with this decorator in order to
+ * exclude their serialization (override of toJSON).
+ *
+ */
+export const jsonIgnored =
+  () =>
+  (target: unknown | any, field: string): any => {
+    const _constructor = target.constructor;
+    const helper: Helper = {
+      field
+    };
+    _defineMetadata(JSON_IGNORED_METADATA_KEY, _constructor, field, helper);
+  };
+
+/**
+ * Annotates entities column fields with this decorator in order to
  * automatically manage translation on CRU(D) operations.
  *
  */
@@ -31,6 +46,15 @@ export const translations =
     };
     _defineMetadata(TRANSLATIONS_METADATA_KEY, _constructor, field, helper);
   };
+
+/**
+ * Get a list of fields that should be ignored on JSON serialization
+ * @param target the class/instance on which we're looking for metadata
+ * @returns the metadata information for this whole class inheritance (current and parents)
+ */
+export const getJsonIgnoredFields = (target: unknown | any): string[] => {
+  return Object.keys(_getMetadata(JSON_IGNORED_METADATA_KEY, target));
+};
 
 /**
  * Get a list of fields that can be translated.
@@ -76,5 +100,6 @@ const _defineMetadata = (
   Reflect.defineMetadata(symbol, newHelper, _constructor);
 };
 
+const JSON_IGNORED_METADATA_KEY = Symbol('jsonIgnored');
 const TRANSLATABLE_METADATA_KEY = Symbol('translatable');
 const TRANSLATIONS_METADATA_KEY = Symbol('translations');
