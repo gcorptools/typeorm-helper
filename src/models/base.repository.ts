@@ -65,7 +65,7 @@ export class BaseRepository<T extends BaseModel> extends Repository<T> {
   ): Page<T> {
     const count = (data || []).length;
     return {
-      page: Math.floor(skip / take) + 1,
+      page: Math.floor(skip / take),
       size: take,
       count,
       data,
@@ -77,11 +77,11 @@ export class BaseRepository<T extends BaseModel> extends Repository<T> {
   private _initOptions(options?: FindManyOptions<T>): FindManyOptions<T> {
     const { take, skip } = options || {};
     const size = take || 20;
-    const page = Math.floor((skip || 0) / size) + 1;
+    const page = Math.floor((skip || 0) / size);
     return (options = {
       ...(options || {}),
       take: size,
-      skip: (page - 1) * size
+      skip: page * size
     });
   }
 }

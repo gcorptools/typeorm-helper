@@ -5,7 +5,7 @@ import { SortDirection } from '../enums';
  */
 export interface Page<T> {
   /**
-   * The requested page number (one-index based)
+   * The requested page number (zero-index based)
    */
   page: number;
   /**
@@ -25,7 +25,7 @@ export interface Page<T> {
    */
   data: T[];
   /**
-   * The computed total number of pages (one-index base)
+   * The computed total number of pages
    */
   totalPages: number;
   /**
