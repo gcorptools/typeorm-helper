@@ -48,4 +48,20 @@ describe('Sort Utils', () => {
 
     expect(Object.keys(sorts).length).toEqual(3);
   });
+
+  it('should keep last nested fields', () => {
+    const sorts = parseSorts([
+      'profile,DESC',
+      'profile.lastName,',
+      'user.age',
+      'user,ASC'
+    ]);
+    expect(sorts).toBeDefined();
+    expect(sorts.profile).toBeDefined();
+    const profileSorts = sorts.profile as any;
+    expect(profileSorts.lastName).toEqual(SortDirection.ASC);
+
+    expect(sorts.user).toEqual(SortDirection.ASC);
+    expect(Object.keys(sorts).length).toEqual(2);
+  });
 });
