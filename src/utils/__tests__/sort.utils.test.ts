@@ -26,4 +26,26 @@ describe('Sort Utils', () => {
     expect(sorts.lastName).toEqual(SortDirection.ASC);
     expect(Object.keys(sorts).length).toEqual(3); // No empty key
   });
+
+  it('should parse nested fields', () => {
+    const sorts = parseSorts([
+      'created,DESC',
+      'profile.firstName',
+      'profile.lastName,',
+      'user.age'
+    ]);
+    expect(sorts).toBeDefined();
+    expect(sorts.created).toEqual(SortDirection.DESC);
+    expect(sorts.profile).toBeDefined();
+
+    const profileSorts = sorts.profile as any;
+    expect(profileSorts.firstName).toEqual(SortDirection.ASC);
+    expect(profileSorts.lastName).toEqual(SortDirection.ASC);
+
+    const userSorts = sorts.user as any;
+    expect(sorts.user).toBeDefined();
+    expect(userSorts.age).toEqual(SortDirection.ASC);
+
+    expect(Object.keys(sorts).length).toEqual(3);
+  });
 });
