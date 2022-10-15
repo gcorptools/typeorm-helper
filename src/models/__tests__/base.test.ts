@@ -311,6 +311,10 @@ describe('Base models', () => {
       implementation: () => 'test',
       name: 'current_database'
     });
+    db.public.registerFunction({
+      implementation: () => 'version',
+      name: 'version'
+    });
     connection = await db.adapters.createTypeormDataSource({
       type: 'postgres',
       entities: [Person, Post, PostTranslation],

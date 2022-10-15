@@ -89,10 +89,12 @@ describe('Filter Utils', () => {
       [
         'person.profile.status[any]["S","D","M"]',
         '!person.profile.access[in][0,1,2]',
-        'createdAt[bt][2022, 2023]'
+        'createdAt[bt][2022, 2023]',
+        '!person.address[in][0,1,2]',
+        'person.job.title[any]["S","D","M"]',
+        'person.job[any]["S","D","M"]'
       ]
     ]);
-
     expect(filters).toBeDefined();
     expect(filters.length).toEqual(3);
 
@@ -115,6 +117,8 @@ describe('Filter Utils', () => {
     expect(thirdLevel.person.profile.access instanceof FindOperator).toEqual(
       true
     );
+    expect(thirdLevel.person.address instanceof FindOperator).toEqual(true);
     expect(thirdLevel.createdAt instanceof FindOperator).toEqual(true);
+    expect(thirdLevel.person.job.title instanceof FindOperator).toEqual(true);
   });
 });

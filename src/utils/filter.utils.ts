@@ -13,6 +13,7 @@ import {
   Not,
   FindOperator
 } from 'typeorm';
+import { isBoxedPrimitive } from 'util/types';
 import { isEmpty } from '.';
 
 /**
@@ -124,6 +125,16 @@ const convertToObject = (
   }, check);
 };
 
+const isRecord = (value: any): boolean => {
+  const primitives = ['number', 'boolean', 'string'];
+  return (
+    !isBoxedPrimitive(value) &&
+    !primitives.includes(typeof value) &&
+    !Array.isArray(value) &&
+    !(value instanceof FindOperator)
+  );
+};
+
 const deepMerge = (
   target: Record<string, any>,
   source: Record<string, any>
@@ -135,10 +146,7 @@ const deepMerge = (
     if (!targetValue || targetValue instanceof FindOperator) {
       return { ...filters, [field]: sourceValue };
     }
-    if (
-      Object.keys(targetValue).length > 0 &&
-      Object.keys(sourceValue).length > 0
-    ) {
+    if (isRecord(sourceValue) && isRecord(targetValue)) {
       // Both values are Record with nested values
       return { ...filters, [field]: deepMerge(targetValue, sourceValue) };
     }
