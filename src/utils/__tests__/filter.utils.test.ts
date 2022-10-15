@@ -78,4 +78,43 @@ describe('Filter Utils', () => {
 
     expect(Object.keys(thirdLevel)).toEqual(['status', 'access', 'createdAt']);
   });
+
+  it('should work with nested fields', () => {
+    const filters = parseFilters([
+      // First level
+      ['name[is]Alpha', 'person.age[lt]12', '!customer[null]'],
+      // Second level
+      ['person.firstName[like]John%', '!falsy', 'person.lastName[iLike]cAssY'],
+      // Third level
+      [
+        'person.profile.status[any]["S","D","M"]',
+        '!person.profile.access[in][0,1,2]',
+        'createdAt[bt][2022, 2023]'
+      ]
+    ]);
+
+    expect(filters).toBeDefined();
+    expect(filters.length).toEqual(3);
+
+    const [firstLevel, secondLevel, thirdLevel] = filters;
+    expect(Object.keys(firstLevel)).toEqual(['name', 'person', 'customer']);
+    expect(firstLevel.name).toEqual('Alpha');
+    expect(firstLevel.person.age instanceof FindOperator).toEqual(true);
+
+    expect(Object.keys(secondLevel)).toEqual([
+      'person'
+      // No falsy since invalid operation
+    ]);
+    expect(secondLevel.person.firstName instanceof FindOperator).toEqual(true);
+    expect(secondLevel.person.lastName instanceof FindOperator).toEqual(true);
+
+    expect(Object.keys(thirdLevel)).toEqual(['person', 'createdAt']);
+    expect(thirdLevel.person.profile.status instanceof FindOperator).toEqual(
+      true
+    );
+    expect(thirdLevel.person.profile.access instanceof FindOperator).toEqual(
+      true
+    );
+    expect(thirdLevel.createdAt instanceof FindOperator).toEqual(true);
+  });
 });

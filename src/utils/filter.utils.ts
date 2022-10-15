@@ -10,7 +10,8 @@ import {
   In,
   Any,
   IsNull,
-  Not
+  Not,
+  FindOperator
 } from 'typeorm';
 import { isEmpty } from '.';
 
@@ -117,7 +118,32 @@ const convertToObject = (
     // eslint-disable-next-line new-cap
     check = Not(check);
   }
-  return { [field]: check };
+  const fieldParts = field.split('.').reverse();
+  return fieldParts.reduce((result: Record<string, any>, part: string) => {
+    return { [part]: result };
+  }, check);
+};
+
+const deepMerge = (
+  target: Record<string, any>,
+  source: Record<string, any>
+): any => {
+  const sourceKeys = Object.keys(source);
+  return sourceKeys.reduce((filters: Record<string, any>, field: string) => {
+    const sourceValue = source[field];
+    const targetValue = target[field];
+    if (!targetValue || targetValue instanceof FindOperator) {
+      return { ...filters, [field]: sourceValue };
+    }
+    if (
+      Object.keys(targetValue).length > 0 &&
+      Object.keys(sourceValue).length > 0
+    ) {
+      // Both values are Record with nested values
+      return { ...filters, [field]: deepMerge(targetValue, sourceValue) };
+    }
+    return { ...filters, [field]: { ...targetValue, ...sourceValue } };
+  }, target);
 };
 
 export const parseFilter = (
@@ -138,7 +164,7 @@ export const parseFilter = (
         return result;
       }
       const newOperation = convertToObject(parsedOperation);
-      return { ...result, ...newOperation };
+      return deepMerge(result, newOperation);
     },
     {}
   );
