@@ -16,24 +16,37 @@ import {
 import { isBoxedPrimitive } from 'util/types';
 import { isEmpty } from '.';
 
+type Filters = Record<string, any>;
+
+type FiltersRelation = { filters: Filters[]; relations: string[] };
+
 /**
  * Parse request query filters instruction into typeorm where compatible object
  * @param {string[]} stringFilters the filtering operations
- * @return {Record<string, any>[]} an object that can be used with Typeorm where
+ * @return {Filters[]} an object that can be used with Typeorm where
  */
 export const parseFilters = (
   stringFilters: string[][] | string[] | string
-): Record<string, any>[] => {
+): FiltersRelation => {
+  const defaultResult = { filters: [], relations: [] };
   if (isEmpty(stringFilters)) {
     // No need to go further
-    return [];
+    return defaultResult;
   }
   if (!Array.isArray(stringFilters)) {
     stringFilters = [stringFilters];
   }
-  return stringFilters.map((stringFilter: string | string[]) =>
-    parseFilter(stringFilter)
+  const { filters, relations } = (stringFilters as string[]).reduce(
+    ({ filters, relations }: FiltersRelation, stringFilter: any) => {
+      const { filter, relations: newRelations } = parseFilter(stringFilter);
+      return {
+        filters: [...filters, filter],
+        relations: [...relations, ...newRelations]
+      };
+    },
+    defaultResult
   );
+  return { filters, relations: Array.from(new Set(relations)) };
 };
 
 /**
@@ -154,16 +167,16 @@ const deepMerge = (
   }, target);
 };
 
-export const parseFilter = (
+const parseFilter = (
   filterOperations: string | string[]
-): Record<string, any> => {
+): { filter: Record<string, any>; relations: string[] } => {
   if (isEmpty(filterOperations)) {
-    return {};
+    return { filter: {}, relations: [] };
   }
   if (!Array.isArray(filterOperations)) {
     filterOperations = [filterOperations];
   }
-  return filterOperations.reduce(
+  const filter = filterOperations.reduce(
     (result: Record<string, any>, operation: string) => {
       const parsedOperation: FilterOperation | null =
         splitFilterOperands(operation);
@@ -176,6 +189,12 @@ export const parseFilter = (
     },
     {}
   );
+  const relations = Array.from(
+    new Set(
+      Object.keys(filter).filter((field: string) => isRecord(filter[field]))
+    )
+  );
+  return { filter, relations };
 };
 
 const FILTER_OPERATOR_START = '[';

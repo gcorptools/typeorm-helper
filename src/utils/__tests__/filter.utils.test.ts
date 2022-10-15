@@ -3,15 +3,15 @@ import { parseFilters } from '..';
 
 describe('Filter Utils', () => {
   it('should not fail with empty string', () => {
-    expect(parseFilters('')).toBeDefined();
+    expect(parseFilters('').filters).toBeDefined();
   });
 
   it('should work with string', () => {
-    expect(parseFilters('age[eq]2')).toBeDefined();
+    expect(parseFilters('age[eq]2').filters).toBeDefined();
   });
 
   it('should work with array', () => {
-    expect(parseFilters(['age[eq]2', 'red[eq]true'])).toBeDefined();
+    expect(parseFilters(['age[eq]2', 'red[eq]true']).filters).toBeDefined();
   });
 
   it('should be error safe', () => {
@@ -23,12 +23,12 @@ describe('Filter Utils', () => {
         'invalid',
         'date[is]',
         'createdAt[unknown]null'
-      ])
+      ]).filters
     ).toBeDefined();
   });
 
   it('should do complex operations', () => {
-    const filters = parseFilters([
+    const { filters, relations } = parseFilters([
       // First level
       [
         'name[is]Alpha',
@@ -56,6 +56,7 @@ describe('Filter Utils', () => {
 
     expect(filters).toBeDefined();
     expect(filters.length).toEqual(3);
+    expect(relations.length).toEqual(0);
 
     const [firstLevel, secondLevel, thirdLevel] = filters;
     expect(Object.keys(firstLevel)).toEqual([
@@ -80,7 +81,7 @@ describe('Filter Utils', () => {
   });
 
   it('should work with nested fields', () => {
-    const filters = parseFilters([
+    const { filters, relations } = parseFilters([
       // First level
       ['name[is]Alpha', 'person.age[lt]12', '!customer[null]'],
       // Second level
@@ -97,6 +98,7 @@ describe('Filter Utils', () => {
     ]);
     expect(filters).toBeDefined();
     expect(filters.length).toEqual(3);
+    expect(relations.length).toEqual(1);
 
     const [firstLevel, secondLevel, thirdLevel] = filters;
     expect(Object.keys(firstLevel)).toEqual(['name', 'person', 'customer']);

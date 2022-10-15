@@ -12,6 +12,10 @@ const parseSingleSort = (field: string, direction: string): Sorts => {
   );
 };
 
+const isRecord = (value: any) => {
+  return !Object.values(SortDirection).includes(value as any);
+};
+
 const deepMerge = (target: Sorts, source: Sorts): any => {
   const sourceKeys = Object.keys(source);
   return sourceKeys.reduce((sorts: Sorts, field: string) => {
@@ -20,7 +24,7 @@ const deepMerge = (target: Sorts, source: Sorts): any => {
     if (!targetValue) {
       return { ...sorts, [field]: sourceValue };
     }
-    if (Object.values(SortDirection).includes(sourceValue as any)) {
+    if (!isRecord(sourceValue)) {
       return { ...sorts, [field]: sourceValue };
     }
     const safeTargetValue: any = Object.values(SortDirection).includes(
@@ -38,19 +42,30 @@ const deepMerge = (target: Sorts, source: Sorts): any => {
  * @param {string | string[]} stringSorts sorting info in the form ['field1,direction', 'field2,direction', ...]
  * @return {Sorts} a typeorm compatible sorting instruction
  */
-export const parseSorts = (stringSorts: string | string[]): Sorts => {
+export const parseSorts = (
+  stringSorts: string | string[]
+): { sorts: Sorts; relations: string[] } => {
   if (isEmpty(stringSorts)) {
-    return {};
+    return {
+      sorts: {},
+      relations: []
+    };
   }
   if (!Array.isArray(stringSorts)) {
     stringSorts = [stringSorts];
   }
   const delimiter = ',';
-  return stringSorts.reduce((sorts: Sorts, value: string) => {
+  const sorts = stringSorts.reduce((sorts: Sorts, value: string) => {
     if (isEmpty(value)) {
       return sorts;
     }
     const [field, direction] = value.split(delimiter);
     return deepMerge(sorts, parseSingleSort(field, direction));
   }, {});
+  const relations = Array.from(
+    new Set(
+      Object.keys(sorts).filter((field: string) => isRecord(sorts[field]))
+    )
+  );
+  return { sorts, relations };
 };
