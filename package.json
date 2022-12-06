@@ -19,7 +19,7 @@
     "format": "prettier --config .prettierrc src/**/*.ts --write"
   },
   "dependencies": {
-    "typeorm": "^0.3.10"
+    "typeorm": "^0.3.11"
   },
   "devDependencies": {
     "@types/jest": "^27.5.1",
