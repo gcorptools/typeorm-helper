@@ -81,6 +81,81 @@ export const getTranslationsField = (target: unknown | any): string | null => {
   return translations.slice(-1)[0];
 };
 
+type Fields = Record<string, any>;
+
+type FieldsRelation = { fields?: Fields; relations?: string[] };
+
+/**
+ * Parse request query fields instruction into typeorm where compatible object
+ * @param {string[]} stringFields the fields select operations
+ * @return {FieldsRelation} an object that can be used with Typeorm where
+ */
+export const parseFields = (
+  stringFields: string[] | string
+): FieldsRelation => {
+  const defaultResult = { fields: undefined, relations: undefined };
+  if (!stringFields.length) {
+    // No need to go further
+    return defaultResult;
+  }
+  if (!Array.isArray(stringFields)) {
+    stringFields = [stringFields];
+  }
+  const { fields, relations } = (stringFields as string[]).reduce(
+    ({ fields = {}, relations = [] }: FieldsRelation, stringField: any) => {
+      const { fields: newFields, relation } = parseField(stringField);
+      return {
+        fields: deepMerge(fields, newFields),
+        relations: [...relations, relation]
+      };
+    },
+    defaultResult
+  );
+  return {
+    fields,
+    relations: Array.from(new Set(relations!.filter((r) => !!r)))
+  };
+};
+
+const parseField = (fieldOperations: string) => {
+  if (!fieldOperations.trim().length) {
+    return { fields: {}, relation: '' };
+  }
+  const parts = fieldOperations.split('.');
+  const relation = parts[0];
+  const fields = [...parts]
+    .reverse()
+    .reduce((result: Record<string, any>, field: string) => {
+      const value = Object.keys(result).length ? result : true;
+      return { [field]: value };
+    }, {});
+  return { fields, relation };
+};
+
+const deepMerge = (
+  target: Record<string, any>,
+  source: Record<string, any>
+): any => {
+  const sourceKeys = Object.keys(source);
+  return sourceKeys.reduce((fields: Record<string, any>, field: string) => {
+    const sourceValue = source[field];
+    const targetValue = target[field];
+    if (
+      (targetValue === true && sourceValue === true) ||
+      (!targetValue && !sourceValue)
+    ) {
+      // Both are booleans
+      return { ...fields, [field]: true };
+    }
+    if (!targetValue || targetValue === true) {
+      // Source value is object
+      return { ...fields, [field]: sourceValue };
+    }
+    // Both are objects
+    return { ...fields, [field]: { ...targetValue, ...sourceValue } };
+  }, target);
+};
+
 const _getMetadata = (symbol: Symbol, target: unknown | any): any => {
   return Reflect.getMetadata(symbol, target.constructor) || {};
 };

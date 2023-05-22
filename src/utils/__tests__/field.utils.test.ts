@@ -6,7 +6,8 @@ import {
 import {
   getJsonIgnoredFields,
   getTranslatableFields,
-  getTranslationsField
+  getTranslationsField,
+  parseFields
 } from '../field.utils';
 
 describe('Field Utils', () => {
@@ -45,5 +46,37 @@ describe('Field Utils', () => {
       'secret',
       'translations'
     ]);
+  });
+
+  it('should parse fields', () => {
+    const { fields: firstFields, relations: firstRelations } = parseFields([]);
+    expect(firstFields).toBeUndefined();
+    expect(firstRelations).toBeUndefined();
+
+    const { fields: secondFields, relations: secondRelations } =
+      parseFields('country.code');
+    expect(secondFields).toBeDefined();
+    expect(secondRelations).toEqual(['country']);
+    expect(secondFields).toEqual({ country: { code: true } });
+
+    const { fields: thirdFields, relations: thirdRelations } = parseFields([
+      'name',
+      'age',
+      'address.city',
+      'address.name',
+      'country.state.code',
+      '',
+      'name'
+    ]);
+
+    expect(thirdFields).toBeDefined();
+    expect(thirdRelations!.length).toEqual(4);
+
+    expect(thirdFields).toEqual({
+      name: true,
+      age: true,
+      address: { city: true, name: true },
+      country: { state: { code: true } }
+    });
   });
 });

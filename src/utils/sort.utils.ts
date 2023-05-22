@@ -37,14 +37,13 @@ const deepMerge = (target: Sorts, source: Sorts): any => {
   }, target);
 };
 
+type SortRelations = { sorts: Sorts; relations: string[] };
 /**
  * Get sorting instruction from received string
  * @param {string | string[]} stringSorts sorting info in the form ['field1,direction', 'field2,direction', ...]
  * @return {Sorts} a typeorm compatible sorting instruction
  */
-export const parseSorts = (
-  stringSorts: string | string[]
-): { sorts: Sorts; relations: string[] } => {
+export const parseSorts = (stringSorts: string | string[]): SortRelations => {
   if (isEmpty(stringSorts)) {
     return {
       sorts: {},

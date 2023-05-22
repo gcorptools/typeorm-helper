@@ -23,7 +23,7 @@ type FiltersRelation = { filters: Filters[]; relations: string[] };
 /**
  * Parse request query filters instruction into typeorm where compatible object
  * @param {string[]} stringFilters the filtering operations
- * @return {Filters[]} an object that can be used with Typeorm where
+ * @return {FiltersRelation} an object that can be used with Typeorm where
  */
 export const parseFilters = (
   stringFilters: string[][] | string[] | string
