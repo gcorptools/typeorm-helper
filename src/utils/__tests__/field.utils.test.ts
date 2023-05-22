@@ -70,7 +70,7 @@ describe('Field Utils', () => {
     ]);
 
     expect(thirdFields).toBeDefined();
-    expect(thirdRelations!.length).toEqual(4);
+    expect(thirdRelations).toEqual(['address', 'country.state']);
 
     expect(thirdFields).toEqual({
       name: true,

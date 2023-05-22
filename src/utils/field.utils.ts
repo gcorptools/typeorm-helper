@@ -122,7 +122,10 @@ const parseField = (fieldOperations: string) => {
     return { fields: {}, relation: '' };
   }
   const parts = fieldOperations.split('.');
-  const relation = parts[0];
+  // Here we will suppose that last field of a dotted field is a leaf: (parentObject.nestedObject.field)
+  // So we'll only take first 2: parentObject and nestedObject as relationships
+  const relation =
+    parts.length <= 1 ? '' : parts.slice(0, parts.length - 1).join('.');
   const fields = [...parts]
     .reverse()
     .reduce((result: Record<string, any>, field: string) => {
