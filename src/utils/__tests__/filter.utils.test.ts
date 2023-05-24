@@ -33,7 +33,7 @@ describe('Filter Utils', () => {
       [
         'name[is]Alpha',
         'age[lt]12',
-        '!customer[null]',
+        '!customer[none]',
         'approved[eq]"OK"',
         'firstName[gtEq]"A"',
         ''
@@ -83,7 +83,7 @@ describe('Filter Utils', () => {
   it('should work with nested fields', () => {
     const { filters, relations } = parseFilters([
       // First level
-      ['name[is]Alpha', 'person.age[lt]12', '!customer[null]'],
+      ['name[is]Alpha', 'person.age[lt]12', '!customer[none]'],
       // Second level
       ['person.firstName[like]John%', '!falsy', 'person.lastName[iLike]cAssY'],
       // Third level

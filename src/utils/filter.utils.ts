@@ -67,7 +67,7 @@ const FILTER_MAP_OPERATION: Record<string, (value: any) => any> = {
   bt: (value: any[]) => Between(value[0], value[1]),
   in: (value: any) => In(value),
   any: (value: any) => Any(value),
-  null: (value: any) => IsNull()
+  none: (_: any) => IsNull()
 };
 
 type FilterOperation = {
