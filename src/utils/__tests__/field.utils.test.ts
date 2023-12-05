@@ -25,7 +25,7 @@ describe('Field Utils', () => {
     expect(getJsonIgnoredFields(WithMetadata)).toEqual([]);
 
     expect(getTranslatableFields(instance)).not.toEqual([]);
-    expect(getTranslationsField(instance)).not.toBeNull();
+    expect(getTranslationsField(instance)).toBeNull();
     expect(getJsonIgnoredFields(instance)).not.toEqual([]);
   });
 
@@ -33,7 +33,7 @@ describe('Field Utils', () => {
     const instance = new WithMetadata();
     const translatable = getTranslatableFields(instance);
     expect(translatable.sort()).toEqual(['description', 'name']);
-    expect(getTranslationsField(instance)).toEqual('translations');
+    expect(getTranslationsField(instance)).toBeNull(); // Only columns can be annotated with
     expect(getJsonIgnoredFields(instance).sort()).toEqual(['translations']);
   });
 
@@ -41,7 +41,7 @@ describe('Field Utils', () => {
     const instance = new WithParentMetadata();
     const translatable = getTranslatableFields(instance);
     expect(translatable.sort()).toEqual(['comment', 'description', 'name']);
-    expect(getTranslationsField(instance)).toEqual('anotherTranslations');
+    expect(getTranslationsField(instance)).toBeNull(); // Only columns can be annotated with
     expect(getJsonIgnoredFields(instance).sort()).toEqual([
       'secret',
       'translations'

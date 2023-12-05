@@ -1,4 +1,4 @@
 export * from './enums';
-export * from './models';
+export * from './domains';
 export * from './types';
 export * from './utils';

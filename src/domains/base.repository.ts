@@ -1,4 +1,5 @@
-import { Page } from '../types';
+import { ValidatedEntity } from '@src/domains/base.validated.entity';
+import { Page } from '@src/types';
 import {
   DeepPartial,
   EntityManager,
@@ -7,9 +8,8 @@ import {
   QueryRunner,
   Repository
 } from 'typeorm';
-import { BaseModel } from './base.model';
 
-export class BaseRepository<T extends BaseModel> extends Repository<T> {
+export class BaseRepository<T extends ValidatedEntity> extends Repository<T> {
   private _repository: Repository<T>;
   private _modelClass: new () => T;
 

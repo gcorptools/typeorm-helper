@@ -1,12 +1,14 @@
-import { BaseModel } from '../models/base.model';
-import { BaseTranslatableModel } from '../models/base.translatable.model';
-import { BaseTranslationModel } from '../models/base.translation.model';
 import {
-  capitalizeFirst,
+  BaseTranslatableEntity,
+  BaseTranslationEntity,
+  BaseValidatedEntity
+} from '@src/domains';
+import {
   jsonIgnored,
+  capitalizeFirst,
   translatable,
   translations
-} from '../utils';
+} from '@src/utils';
 import { randomUUID } from 'crypto';
 import {
   Entity,
@@ -16,6 +18,9 @@ import {
   ManyToOne
 } from 'typeorm';
 
+/**
+ * No transformation whatsoever will be applied on instances of this class
+ */
 export class NoMetadataPerson {
   id!: number;
 
@@ -32,8 +37,15 @@ export class NoMetadataPerson {
   posts!: Post[];
 }
 
+/**
+ * The Person class will run a certain amount of methods depending on situations.<br/>
+ * @jsonIgnored applied on firstName and lastName will make these fields not serialized in JSON.
+ * @format method will run every time we save a instance in database for applying format to provided data.
+ * ie: Capitalizing first and last names, concatenating these two fields in name...
+ * @validate method will run at each save for checking if data is consistent (ie: positive age).
+ */
 @Entity()
-export class Person extends BaseModel {
+export class Person extends BaseValidatedEntity() {
   @PrimaryGeneratedColumn()
   id!: number;
 
@@ -71,7 +83,12 @@ export class Person extends BaseModel {
   }
 }
 
-class BasePostTranslation extends BaseTranslatableModel<PostTranslation> {
+/**
+ * BasePost will set up some needed fields for having an automatically translated record in database.
+ * @currentLanguage will supposedly give us the current language at runtime at the moment of save.
+ * @translationClass will give us the class/table saving the translation and also the translated columns.
+ */
+abstract class BasePost extends BaseTranslatableEntity(BaseValidatedEntity()) {
   static activeLanguage: string;
 
   @PrimaryGeneratedColumn()
@@ -85,17 +102,22 @@ class BasePostTranslation extends BaseTranslatableModel<PostTranslation> {
   @Column()
   description!: string;
 
-  protected _currentLanguage(): string {
+  currentLanguage(): string {
     return Post.activeLanguage;
   }
 
-  protected get _translationClass(): new () => PostTranslation {
+  get translationClass(): new () => PostTranslation {
     return PostTranslation;
   }
 }
 
+/**
+ * Post class is fully configured.
+ * @translations this required decorator for translatable entities will indicates the translation table.
+ * @OneToMany is not needed on the field, since it is automatically managed by translations
+ */
 @Entity()
-export class Post extends BasePostTranslation {
+export class Post extends BasePost {
   @Column()
   code!: string;
 
@@ -103,11 +125,7 @@ export class Post extends BasePostTranslation {
   author!: Person;
 
   @jsonIgnored()
-  @translations()
-  @OneToMany(() => PostTranslation, (translation) => translation.source, {
-    eager: true,
-    cascade: ['insert', 'update']
-  })
+  @translations(() => PostTranslation, (translation) => translation.source)
   translations!: PostTranslation[];
 
   format(data: any): void {
@@ -116,8 +134,14 @@ export class Post extends BasePostTranslation {
   }
 }
 
+/**
+ * PostTranslation indicates which fields from post are translated, here title and description.
+ * Note that we need a ManyToOne to make the inverse OneToMany translation work in Post entity.
+ */
 @Entity()
-export class PostTranslation extends BaseTranslationModel {
+export class PostTranslation extends BaseTranslationEntity(
+  BaseValidatedEntity()
+) {
   @PrimaryGeneratedColumn()
   id!: number;
 
@@ -132,10 +156,10 @@ export class PostTranslation extends BaseTranslationModel {
 }
 
 /**
- * Everything is correct except missing translations() decorator
+ * Everything is correct except we miss the required decorator translations
  */
 @Entity()
-export class NotValidPost extends BasePostTranslation {}
+export class NotValidPost extends BasePost {}
 
 export class NoMetadata {
   id!: number;
@@ -149,7 +173,6 @@ export class WithMetadata extends NoMetadata {
   @translatable()
   description!: string;
   @jsonIgnored()
-  @translations()
   translations!: Record<string, string>[];
 }
 
@@ -158,6 +181,4 @@ export class WithParentMetadata extends WithMetadata {
   secret!: string;
   @translatable()
   comment!: string;
-  @translations()
-  anotherTranslations!: Record<string, string>[];
 }

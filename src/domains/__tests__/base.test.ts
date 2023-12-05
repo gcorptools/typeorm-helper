@@ -1,14 +1,14 @@
+import { IBackup, IMemoryDb, newDb } from 'pg-mem';
+import { DataSource, LessThan, Like, MoreThan } from 'typeorm';
+import { BaseRepository } from '..';
 import { SortDirection } from '../../enums';
 import {
-  NoMetadataPerson,
   NotValidPost,
   Person,
   Post,
+  NoMetadataPerson,
   PostTranslation
 } from '../../tests/test.models';
-import { IBackup, IMemoryDb, newDb } from 'pg-mem';
-import { DataSource, LessThan, Like, MoreThan } from 'typeorm';
-import { BaseRepository } from '../base.repository';
 
 let db: IMemoryDb;
 let backup: IBackup;

@@ -14,17 +14,20 @@ describe('Filter Utils', () => {
     expect(parseFilters(['age[eq]2', 'red[eq]true']).filters).toBeDefined();
   });
 
-  it('should be error safe', () => {
+  it('should not be error safe', () => {
     expect(
-      parseFilters([
-        'name[like]"DOE"',
-        'address[like]without quotes',
-        '',
-        'invalid',
-        'date[is]',
-        'createdAt[unknown]null'
-      ]).filters
-    ).toBeDefined();
+      () =>
+        parseFilters([
+          'name[like]"DOE"',
+          'address[like]without quotes',
+          '',
+          'invalid',
+          'date[is]',
+          'createdAt[unknown]null'
+        ]).filters
+    ).toThrow();
+
+    expect(() => parseFilters(['name[invalid]"DOE"']).filters).toThrow();
   });
 
   it('should do complex operations', () => {
@@ -35,14 +38,12 @@ describe('Filter Utils', () => {
         'age[lt]12',
         '!customer[none]',
         'approved[eq]"OK"',
-        'firstName[gtEq]"A"',
-        ''
+        'firstName[gtEq]"A"'
       ],
       // Second level
       [
         'firstName[like]John%',
         '!age[ltEq]22',
-        '!falsy',
         'height[gt]1',
         'lastName[iLike]cAssY'
       ],
@@ -81,11 +82,13 @@ describe('Filter Utils', () => {
   });
 
   it('should work with nested fields', () => {
-    const { filters, relations } = parseFilters([
+    expect(() => parseFilters<any>(['!falsy'])).toThrow();
+
+    const { filters, relations } = parseFilters<any>([
       // First level
       ['name[is]Alpha', 'person.age[lt]12', '!customer[none]'],
       // Second level
-      ['person.firstName[like]John%', '!falsy', 'person.lastName[iLike]cAssY'],
+      ['person.firstName[like]John%', 'person.lastName[iLike]cAssY'],
       // Third level
       [
         'person.profile.status[any]["S","D","M"]',

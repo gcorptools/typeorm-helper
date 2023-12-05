@@ -15,19 +15,16 @@ import {
 } from 'typeorm';
 import { isBoxedPrimitive } from 'util/types';
 import { isEmpty } from '.';
-
-type Filters = Record<string, any>;
-
-type FiltersRelation = { filters: Filters[]; relations: string[] };
+import { FilterOperator } from '@src/enums';
 
 /**
  * Parse request query filters instruction into typeorm where compatible object
  * @param {string[]} stringFilters the filtering operations
  * @return {FiltersRelation} an object that can be used with Typeorm where
  */
-export const parseFilters = (
+export const parseFilters = <T>(
   stringFilters: string[][] | string[] | string
-): FiltersRelation => {
+): FiltersRelation<T> => {
   const defaultResult = { filters: [], relations: [] };
   if (isEmpty(stringFilters)) {
     // No need to go further
@@ -37,7 +34,7 @@ export const parseFilters = (
     stringFilters = [stringFilters];
   }
   const { filters, relations } = (stringFilters as string[]).reduce(
-    ({ filters, relations }: FiltersRelation, stringFilter: any) => {
+    ({ filters, relations }: FiltersRelation<T>, stringFilter: any) => {
       const { filter, relations: newRelations } = parseFilter(stringFilter);
       return {
         filters: [...filters, filter],
@@ -49,54 +46,71 @@ export const parseFilters = (
   return { filters, relations: Array.from(new Set(relations)) };
 };
 
-/**
- * Map between keywords and typeorm Operators
- */
-const FILTER_MAP_OPERATION: Record<string, (value: any) => any> = {
-  is: (value: any) => value,
+const FILTER_OPERATOR_START = '[';
+const FILTER_OPERATOR_END = ']';
+const FILTER_OPERATOR_NOT = '!';
 
-  eq: (value: any) => Equal(value),
-  lt: (value: any) => LessThan(value),
-  ltEq: (value: any) => LessThanOrEqual(value),
-  gt: (value: any) => MoreThan(value),
-  gtEq: (value: any) => MoreThanOrEqual(value),
+type SingleValueOperator<T> = (value: T | FindOperator<T>) => FindOperator<T>;
 
-  like: (value: any) => Like(value),
-  iLike: (value: any) => ILike(value),
+type Filters<T> = Record<string, T | FindOperator<T>>;
 
-  bt: (value: any[]) => Between(value[0], value[1]),
-  in: (value: any) => In(value),
-  any: (value: any) => Any(value),
-  none: (_: any) => IsNull()
-};
+type FiltersRelation<T> = { filters: Filters<T>[]; relations: string[] };
 
 type FilterOperation = {
   field: string;
-  operator: string;
+  operator: FilterOperator;
   value: any;
   not: boolean;
+};
+
+const getTypeormOperator = <T>(): Record<
+  FilterOperator,
+  SingleValueOperator<T>
+> => {
+  return {
+    [FilterOperator.is]: (value: any) => value,
+
+    [FilterOperator.eq]: Equal,
+    [FilterOperator.lt]: LessThan,
+    [FilterOperator.ltEq]: LessThanOrEqual,
+    [FilterOperator.gt]: MoreThan,
+    [FilterOperator.gtEq]: MoreThanOrEqual,
+
+    [FilterOperator.like]: Like,
+    [FilterOperator.iLike]: ILike,
+
+    [FilterOperator.bt]: ([from, to]: any) => Between(from, to),
+    [FilterOperator.in]: (values: any) => In(values),
+    [FilterOperator.any]: (values: any) => Any(values),
+    [FilterOperator.none]: IsNull
+  };
 };
 
 /**
  * Receives a stringified filtering instruction
  * @param {string} filterOperation a value in the form: field[operator]value
- * @return {FilterOperation | null} an object representing the received instruction
+ * @return {FilterOperation} an object representing the received instruction
  */
-const splitFilterOperands = (
-  filterOperation: string
-): FilterOperation | null => {
+const splitFilterOperands = (filterOperation: string): FilterOperation => {
   const safeValue = filterOperation || '';
   const operatorStart = safeValue.indexOf(FILTER_OPERATOR_START);
   const operatorEnd = safeValue.indexOf(FILTER_OPERATOR_END);
 
   if (isEmpty(filterOperation) || operatorStart < 0 || operatorEnd < 0) {
     // Null or invalid values
-    return null;
+    throw new Error(
+      `Cannot get filter operation from invalid or empty string: '${filterOperation}'`
+    );
   }
   const rawField = safeValue.slice(0, operatorStart);
   const not = rawField.startsWith(FILTER_OPERATOR_NOT);
   const field = not ? rawField.slice(FILTER_OPERATOR_NOT.length) : rawField;
-  const operator = safeValue.slice(operatorStart + 1, operatorEnd);
+  const operator = Object.values(FilterOperator).find(
+    (e) => e === safeValue.slice(operatorStart + 1, operatorEnd)
+  );
+  if (!operator) {
+    throw new Error('Unknown provided operator');
+  }
   const value = safeValue.slice(operatorEnd + 1);
   return { field, operator, value, not };
 };
@@ -119,11 +133,11 @@ const rawValue = (value: any) => {
  * @param {FilterOperation} filterOperation the operation to convert
  * @return {Record<string, any>} compatible value for where
  */
-const convertToObject = (
+const convertToObject = <T>(
   filterOperation: FilterOperation
 ): Record<string, any> => {
   const { field, operator, value, not } = filterOperation;
-  const operatorMethod = FILTER_MAP_OPERATION[operator];
+  const operatorMethod = getTypeormOperator<T>()[operator];
   if (!operatorMethod) {
     return {};
   }
@@ -196,7 +210,3 @@ const parseFilter = (
   );
   return { filter, relations };
 };
-
-const FILTER_OPERATOR_START = '[';
-const FILTER_OPERATOR_END = ']';
-const FILTER_OPERATOR_NOT = '!';

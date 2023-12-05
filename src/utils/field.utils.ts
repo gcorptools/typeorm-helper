@@ -1,4 +1,5 @@
 import 'reflect-metadata';
+import { ObjectType, OneToMany, RelationOptions } from 'typeorm';
 
 /**
  * Basing Helper interface for serialization needs
@@ -37,14 +38,28 @@ export const translatable =
     _defineMetadata(TRANSLATABLE_METADATA_KEY, _constructor, field, helper);
   };
 
+/**
+ * Indicates the OneToMany field that will contain the translation for the current entity.
+ * @OneToMany is automatically added to the decorated field with eager and cascade on insert/update.
+ * Thus, having too many "translatable" entities can affect performances.
+ */
 export const translations =
-  () =>
+  <T>(
+    typeFunctionOrTarget: string | ((type?: any) => ObjectType<T>),
+    inverseSide: string | ((object: T) => any),
+    options: RelationOptions = {}
+  ) =>
   (target: unknown | any, field: string): any => {
     const _constructor = target.constructor;
     const helper: Helper = {
       field
     };
     _defineMetadata(TRANSLATIONS_METADATA_KEY, _constructor, field, helper);
+    OneToMany(typeFunctionOrTarget, inverseSide, {
+      ...options,
+      eager: true,
+      cascade: ['insert', 'update']
+    })(target, field);
   };
 
 /**
