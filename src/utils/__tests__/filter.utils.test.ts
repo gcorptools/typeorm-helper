@@ -31,7 +31,7 @@ describe('Filter Utils', () => {
   });
 
   it('should do complex operations', () => {
-    const { filters, relations } = parseFilters([
+    const { filters, relations } = parseFilters<any>([
       // First level
       [
         'name[is]Alpha',
@@ -57,7 +57,7 @@ describe('Filter Utils', () => {
 
     expect(filters).toBeDefined();
     expect(filters.length).toEqual(3);
-    expect(relations.length).toEqual(0);
+    expect(Object.keys(relations).length).toEqual(0);
 
     const [firstLevel, secondLevel, thirdLevel] = filters;
     expect(Object.keys(firstLevel)).toEqual([
@@ -101,7 +101,10 @@ describe('Filter Utils', () => {
     ]);
     expect(filters).toBeDefined();
     expect(filters.length).toEqual(3);
-    expect(relations.length).toEqual(1);
+    expect(relations.person).toBeDefined();
+    const { profile, job } = relations.person as any;
+    expect(profile).toEqual(true);
+    expect(job).toEqual(true);
 
     const [firstLevel, secondLevel, thirdLevel] = filters;
     expect(Object.keys(firstLevel)).toEqual(['name', 'person', 'customer']);

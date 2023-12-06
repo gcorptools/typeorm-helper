@@ -11,7 +11,9 @@ import {
   Any,
   IsNull,
   Not,
-  FindOperator
+  FindOperator,
+  FindOptionsWhere,
+  FindOptionsRelations
 } from 'typeorm';
 import { isBoxedPrimitive } from 'util/types';
 import { isEmpty } from '.';
@@ -25,7 +27,7 @@ import { FilterOperator } from '@src/enums';
 export const parseFilters = <T>(
   stringFilters: string[][] | string[] | string
 ): FiltersRelation<T> => {
-  const defaultResult = { filters: [], relations: [] };
+  const defaultResult = { filters: [], relations: {} };
   if (isEmpty(stringFilters)) {
     // No need to go further
     return defaultResult;
@@ -35,26 +37,28 @@ export const parseFilters = <T>(
   }
   const { filters, relations } = (stringFilters as string[]).reduce(
     ({ filters, relations }: FiltersRelation<T>, stringFilter: any) => {
-      const { filter, relations: newRelations } = parseFilter(stringFilter);
+      const { filter, relations: newRelations } = parseFilter<T>(stringFilter);
       return {
         filters: [...filters, filter],
-        relations: [...relations, ...newRelations]
+        relations: deepMerge(relations, newRelations, Boolean)
       };
     },
     defaultResult
   );
-  return { filters, relations: Array.from(new Set(relations)) };
+  return { filters, relations };
 };
 
+const NESTED_DELIMITER = '.';
 const FILTER_OPERATOR_START = '[';
 const FILTER_OPERATOR_END = ']';
 const FILTER_OPERATOR_NOT = '!';
 
 type SingleValueOperator<T> = (value: T | FindOperator<T>) => FindOperator<T>;
 
-type Filters<T> = Record<string, T | FindOperator<T>>;
-
-type FiltersRelation<T> = { filters: Filters<T>[]; relations: string[] };
+type FiltersRelation<T> = {
+  filters: FindOptionsWhere<T>[];
+  relations: FindOptionsRelations<T>;
+};
 
 type FilterOperation = {
   field: string;
@@ -146,7 +150,7 @@ const convertToObject = <T>(
     // eslint-disable-next-line new-cap
     check = Not(check);
   }
-  const fieldParts = field.split('.').reverse();
+  const fieldParts = field.split(NESTED_DELIMITER).reverse();
   return fieldParts.reduce((result: Record<string, any>, part: string) => {
     return { [part]: result };
   }, check);
@@ -164,34 +168,63 @@ const isRecord = (value: any): boolean => {
 
 const deepMerge = (
   target: Record<string, any>,
-  source: Record<string, any>
+  source: Record<string, any>,
+  leafNodeClass: new (...args: any[]) => any
 ): any => {
   const sourceKeys = Object.keys(source);
   return sourceKeys.reduce((filters: Record<string, any>, field: string) => {
     const sourceValue = source[field];
     const targetValue = target[field];
-    if (!targetValue || targetValue instanceof FindOperator) {
+    if (!targetValue || targetValue instanceof leafNodeClass) {
       return { ...filters, [field]: sourceValue };
     }
     if (isRecord(sourceValue) && isRecord(targetValue)) {
       // Both values are Record with nested values
-      return { ...filters, [field]: deepMerge(targetValue, sourceValue) };
+      return {
+        ...filters,
+        [field]: deepMerge(targetValue, sourceValue, leafNodeClass)
+      };
     }
     return { ...filters, [field]: { ...targetValue, ...sourceValue } };
   }, target);
 };
 
-const parseFilter = (
+const relationsFromFilterOperations = <T>(
+  filter: string[]
+): FindOptionsRelations<T> => {
+  if (isEmpty(filter)) {
+    return {};
+  }
+  const nestedFields = filter
+    .map((f) =>
+      f
+        .substring(0, f.indexOf(FILTER_OPERATOR_START))
+        .replace(FILTER_OPERATOR_NOT, '')
+    )
+    .filter((f) => f.includes(NESTED_DELIMITER))
+    .map((f) => f.substring(0, f.lastIndexOf(NESTED_DELIMITER)));
+  const uniqueNestedFields = new Set(nestedFields);
+  return Array.from(uniqueNestedFields).reduce(
+    (result: FindOptionsRelations<T>, field: string) => {
+      const parts = field.split(NESTED_DELIMITER).reverse();
+      const value = parts.reduce((r: any, f: string) => ({ [f]: r }), true);
+      return deepMerge(result, value, Boolean);
+    },
+    {}
+  );
+};
+
+const parseFilter = <T>(
   filterOperations: string | string[]
-): { filter: Record<string, any>; relations: string[] } => {
+): { filter: FindOptionsWhere<T>; relations: FindOptionsRelations<T> } => {
   if (isEmpty(filterOperations)) {
-    return { filter: {}, relations: [] };
+    return { filter: {}, relations: {} };
   }
   if (!Array.isArray(filterOperations)) {
     filterOperations = [filterOperations];
   }
   const filter = filterOperations.reduce(
-    (result: Record<string, any>, operation: string) => {
+    (result: FindOptionsWhere<T>, operation: string) => {
       const parsedOperation: FilterOperation | null =
         splitFilterOperands(operation);
       if (!parsedOperation) {
@@ -199,14 +232,10 @@ const parseFilter = (
         return result;
       }
       const newOperation = convertToObject(parsedOperation);
-      return deepMerge(result, newOperation);
+      return deepMerge(result, newOperation, FindOperator);
     },
     {}
   );
-  const relations = Array.from(
-    new Set(
-      Object.keys(filter).filter((field: string) => isRecord(filter[field]))
-    )
-  );
+  const relations = relationsFromFilterOperations(filterOperations);
   return { filter, relations };
 };
