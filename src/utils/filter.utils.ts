@@ -16,8 +16,8 @@ import {
   FindOptionsRelations
 } from 'typeorm';
 import { isBoxedPrimitive } from 'util/types';
-import { isEmpty } from '.';
 import { FilterOperator } from '@src/enums';
+import { isEmpty } from '@src/utils/common.utils';
 
 /**
  * Parse request query filters instruction into typeorm where compatible object
@@ -172,20 +172,20 @@ const deepMerge = (
   leafNodeClass: new (...args: any[]) => any
 ): any => {
   const sourceKeys = Object.keys(source);
-  return sourceKeys.reduce((filters: Record<string, any>, field: string) => {
+  return sourceKeys.reduce((results: Record<string, any>, field: string) => {
     const sourceValue = source[field];
     const targetValue = target[field];
     if (!targetValue || targetValue instanceof leafNodeClass) {
-      return { ...filters, [field]: sourceValue };
+      return { ...results, [field]: sourceValue };
     }
     if (isRecord(sourceValue) && isRecord(targetValue)) {
       // Both values are Record with nested values
       return {
-        ...filters,
+        ...results,
         [field]: deepMerge(targetValue, sourceValue, leafNodeClass)
       };
     }
-    return { ...filters, [field]: { ...targetValue, ...sourceValue } };
+    return { ...results, [field]: { ...targetValue, ...sourceValue } };
   }, target);
 };
 

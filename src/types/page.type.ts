@@ -1,4 +1,4 @@
-import { SortDirection } from '@src/enums';
+import { Sorts } from '@src/types/sorts.type';
 
 /**
  * Page response for sending as API response
@@ -15,7 +15,7 @@ export interface Page<T> {
   /**
    * The requested sorting instructions
    */
-  sortBy?: Record<string, SortDirection>;
+  sortBy?: Sorts;
   /**
    * The current number of items
    */
