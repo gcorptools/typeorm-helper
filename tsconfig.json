@@ -1,27 +1,19 @@
 {
-    "compilerOptions": {
-        "baseUrl": ".",
-        "paths": {
-            "@src/*": [
-                "src/*"
-            ]
-        },
-        "target": "es2016",
-        "experimentalDecorators": true,
-        "emitDecoratorMetadata": true,
-        "module": "commonjs",
-        "resolveJsonModule": true,
-        "declaration": true,
-        "outDir": "./build",
-        "esModuleInterop": true,
-        "forceConsistentCasingInFileNames": true,
-        "strict": true,
-        "skipLibCheck": true
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@src/*": ["src/*"]
     },
-    "exclude": [
-        "node_modules",
-        "**/__tests__",
-        "**/__mocks__",
-        "build"
-    ]
+    "target": "es2016",
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true,
+    "module": "commonjs",
+    "declaration": true,
+    "outDir": "./build",
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    "strict": true,
+    "skipLibCheck": true
+  },
+  "exclude": ["node_modules", "**/__tests__", "**/__mocks__", "jest.config.ts"]
 }
