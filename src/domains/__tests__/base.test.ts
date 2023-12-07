@@ -105,7 +105,7 @@ describe('Base models', () => {
     expect(secondFetch.totalElements).toEqual(2); // firstName: 80 and firstName: 90
     expect(secondFetch.totalPages).toEqual(1);
     expect(secondFetch.count).toEqual(2);
-    expect(secondFetch.data[0].lastName).toEqual('LAST NAME 90');
+    expect(secondFetch.content[0].lastName).toEqual('LAST NAME 90');
 
     const thirdFetch = await personRepository.findPage();
     expect(thirdFetch.totalElements).toEqual(100);

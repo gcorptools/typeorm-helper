@@ -60,15 +60,17 @@ export class BaseRepository<T extends ValidatedEntity> extends Repository<T> {
   private _getPage(
     take: number,
     skip: number,
-    data: T[],
+    content: T[],
     totalElements: number
   ): Page<T> {
-    const count = (data || []).length;
+    const count = (content || []).length;
     return {
       page: Math.floor(skip / take),
       size: take,
+      sorts: [],
+      filters: [],
       count,
-      data,
+      content,
       totalElements,
       totalPages: count > 0 ? Math.ceil(totalElements / count) : 0
     };
