@@ -5,3 +5,5 @@ yarn-error.log
 package-json.lock
 coverage
 .vscode
+.env
+.scannerwork
