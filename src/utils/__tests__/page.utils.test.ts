@@ -91,7 +91,11 @@ describe('Page Utils', () => {
       // First level
       ['name[is]Alpha', 'person.age[lt]12', '!customer[none]'],
       // Second level
-      ['person.firstName[like]John%', 'person.lastName[iLike]cAssY'],
+      [
+        'person.firstName[like]John%',
+        'person.lastName[iLike]cAssY',
+        'person.lastName[iLike]sY'
+      ],
       // Third level
       [
         'person.profile.status[any]["S","D","M"]',

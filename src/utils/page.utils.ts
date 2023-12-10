@@ -14,7 +14,8 @@ import {
   FindOperator,
   FindOptionsWhere,
   FindOptionsRelations,
-  FindOptionsOrder
+  FindOptionsOrder,
+  And
 } from 'typeorm';
 import { isBoxedPrimitive } from 'util/types';
 import { FilterOperator, SortDirection } from '@src/enums';
@@ -127,7 +128,9 @@ export const parsePageParams = <T>({
 export const deepMerge = (
   target: Record<string, any>,
   source: Record<string, any>,
-  isRecord: (value: any) => boolean
+  isRecord: (value: any) => boolean,
+  mergeValues: (value1: any, value2: any) => any = (_: any, value2: any) =>
+    value2
 ): any => {
   const sourceKeys = Object.keys(source);
   return sourceKeys.reduce((results: Record<string, any>, field: string) => {
@@ -138,16 +141,19 @@ export const deepMerge = (
     // Both values can be non empty while both are not records, then take source
     const sourceValue = source[field];
     const targetValue = target[field];
-    if (!targetValue || !isRecord(targetValue)) {
+    if (!targetValue) {
       return { ...results, [field]: sourceValue };
     }
-    if (!sourceValue || !isRecord(sourceValue)) {
+    if (!sourceValue) {
       return { ...results, [field]: targetValue };
+    }
+    if (!isRecord(sourceValue) && !isRecord(targetValue)) {
+      return { ...results, [field]: mergeValues(targetValue, sourceValue) };
     }
     // Both values are Record with nested values
     return {
       ...results,
-      [field]: deepMerge(targetValue, sourceValue, isRecord)
+      [field]: deepMerge(targetValue, sourceValue, isRecord, mergeValues)
     };
   }, target);
 };
@@ -320,7 +326,7 @@ const parseFilter = <T>(
     (result: FindOptionsWhere<T>, operation: string) => {
       const parsedOperation: FilterOperation = splitFilterOperands(operation);
       const newOperation = convertToObject(parsedOperation);
-      return deepMerge(result, newOperation, isFilterRecord);
+      return deepMerge(result, newOperation, isFilterRecord, And);
     },
     {}
   );

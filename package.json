@@ -5,6 +5,13 @@
     "type": "git",
     "url": "https://github.com/gcorptools/typeorm-helper.git"
   },
+  "keywords": [
+    "typeorm",
+    "translation",
+    "pagination",
+    "sorting",
+    "filtering"
+  ],
   "license": "MIT",
   "main": "./build/index.js",
   "types": "./build/index.d.ts",
@@ -15,6 +22,7 @@
     "clean": "yarn del build --force",
     "build": "yarn clean && tsc && tsc-alias -p tsconfig.json",
     "test": "jest --watchAll --no-cache",
+    "test:ci": "jest",
     "coverage": "jest --watchAll --no-cache --coverage",
     "sonar": "ts-node sonar-scanner.js",
     "format": "prettier --config .prettierrc src/**/*.ts --write"

@@ -240,8 +240,6 @@ If you are curious about the structure of data in database, the previous tables 
 | id  | code           | title    | description    |
 | --- | -------------- | -------- | -------------- |
 | 1   | POST-122355531 | My title | My description |
-|     |                |          |                |
-|     |                |          |                |
 
 #### Table post_translations
 
@@ -305,6 +303,6 @@ class PersonController {
 
 The complete list of available filtering operators can be retrieved in the class **FilterOperator**.
 
-## Contributes
+## Contributing
 
 TODO
