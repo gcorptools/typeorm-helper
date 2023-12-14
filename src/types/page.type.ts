@@ -1,7 +1,32 @@
 /**
+ * Filters params for requesting filtered results
+ */
+export type FiltersParams = {
+  /**
+   * The requested filtering instructions
+   */
+  filters?: string[][] | string[] | string;
+};
+
+/**
+ * Sorts params for requesting sorted results
+ */
+export type SortsParams = {
+  /**
+   * The requested sorting instructions
+   */
+  sorts?: string | string[];
+};
+
+/**
+ * Params for requesting filtered/sorted results
+ */
+export type FetchParams = FiltersParams & SortsParams;
+
+/**
  * Page params for requesting paginated/filtered/sorted results
  */
-export interface PageParams {
+export type PageParams = {
   /**
    * The requested page number (zero-index based)
    */
@@ -10,15 +35,7 @@ export interface PageParams {
    * The requested size of the page
    */
   size?: number;
-  /**
-   * The requested sorting instructions
-   */
-  sorts?: string | string[];
-  /**
-   * The requested filtering instructions
-   */
-  filters?: string[][] | string[] | string;
-}
+} & FetchParams;
 
 /**
  * Page response for sending as API response
